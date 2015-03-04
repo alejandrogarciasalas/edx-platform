@@ -150,38 +150,29 @@
     % endif
   </ul>
 </div>
+
 % if cdn_eval:
-    <script>
-        function sendMetricToGraphite(metricName, value) {
-            // TODO: add real API Key
-            var apiKey = YOUR-API-KEY;
-            var url = "https://" + apiKey + "@www.hostedgraphite.com/api/v1/sink";
-            var request = new XMLHttpRequest();
-            request.open("POST", url, true);  // send asynchronously
-            request.send(metricName + " " + value);
-        };
-
-        var movie = document.getElementById("vid1");
-        var experimentBranch = false;
-        var sampleRate = 1.0;
-        // TODO: replace with hardcoded video urls
-        var videoURLs = ["http://cloudfront/video.mp4", "http://netease/video.mp4", "http://xuetang/video.mp4"];
-
-        if (Math.random() > 1e-6 // due to a bug in Chrome 30
-            && Math.random() <= sampleRate) {
-                experimentBranch = Math.floor(Math.random() * 3);
-        }
-
-        movie.src = videoURLs[experimentBranch || 0];
-
-        var timeInit = Date.now();
-
-        movie.addEventListener("canplaythrough", function() {
-            var timeElapsed = Date.now() - timeInit;
-            // if sampled, send a beacon back containing timeElapsed and experimentBranch.
-            if experimentBranch !== false {
-                sendMetricToGraphite("loadtime_" + experimentBranch, timeElapsed);
-            {
-        });
-    </script>
+<script>
+  function sendMetricToGraphite(metricName, value) {
+    var url = "${cdn_eval_endpoint}";
+    var request = new XMLHttpRequest();
+    request.open("POST", url, true);  // send asynchronously
+    request.send(metricName + " " + value);
+  };
+  var cdnStartTime, beaconSent = false;
+  function initializeCDNExperiment() {
+    cdnStartTime = Date.now();
+    document.getElementById("video_${id}").addEventListener("html5:canplaythrough", function(e) {
+      if (!beaconSent) {
+        timeElapsed = Date.now() - cdnStartTime;
+        sendMetricToGraphite("loadtime_${cdn_exp_group}", timeElapsed);
+      }
+      beaconSent = true;
+    });
+  }
+  document.getElementById("video_${id}").addEventListener("initialize", initializeCDNExperiment);
+  if (document.getElementById("video_${id}").classList.contains("is-initialized")) {
+    initializeCDNExperiment();
+  }
+</script>
 % endif;
