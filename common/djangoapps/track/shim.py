@@ -120,6 +120,14 @@ class VideoEventProcessor(object):
 
             del payload['module_id']
 
+        if 'seek_type' in payload:
+            seek_type = payload['seek_type']
+            if seek_type == "slide":
+                payload['type'] = "onSlideSeek"
+            elif seek_type == "skip":
+                payload['type'] = "onSkipSeek"
+            del payload['seek_type']
+
         if 'current_time' in payload:
             payload['currentTime'] = payload.pop('current_time')
 
