@@ -137,12 +137,6 @@ def track_segmentio_event(request):  # pylint: disable=too-many-statements
     else:
         context['event_source'] = event_source
 
-    if 'name' not in segment_properties:
-        raise EventValidationError(ERROR_MISSING_NAME)
-
-    if 'data' not in segment_properties:
-        raise EventValidationError(ERROR_MISSING_DATA)
-
     # Ignore event types and names that are unsupported
     segment_event_type = full_segment_event.get('type')
     segment_event_name = segment_properties['name']
@@ -156,6 +150,12 @@ def track_segmentio_event(request):  # pylint: disable=too-many-statements
         any(disallowed_subs_name in segment_event_name.lower() for disallowed_subs_name in disallowed_substring_names)
     ):
         raise EventValidationError(WARNING_IGNORED_TYPE)
+
+    if 'name' not in segment_properties:
+        raise EventValidationError(ERROR_MISSING_NAME)
+
+    if 'data' not in segment_properties:
+        raise EventValidationError(ERROR_MISSING_DATA)
 
     # create and populate application field if it doesn't exist
     app_context = segment_properties.get('context', {})
