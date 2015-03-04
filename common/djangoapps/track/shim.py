@@ -120,11 +120,17 @@ class VideoEventProcessor(object):
 
             del payload['module_id']
 
+        #For the Android build that isn't distinguishing between skip and seek
+        if 'requested_skip_interval' in payload:
+            if payload['requested_skip_interval'] != -30:
+                if 'seek_type' in payload:
+                    payload['seek_type'] = 'slide'
+
         if 'seek_type' in payload:
             seek_type = payload['seek_type']
-            if seek_type == "slide":
+            if seek_type == 'slide':
                 payload['type'] = "onSlideSeek"
-            elif seek_type == "skip":
+            elif seek_type == 'skip':
                 payload['type'] = "onSkipSeek"
             del payload['seek_type']
 
