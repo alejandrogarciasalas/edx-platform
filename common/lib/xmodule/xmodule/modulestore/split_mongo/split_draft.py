@@ -356,9 +356,8 @@ class DraftVersioningModuleStore(SplitMongoModuleStore, ModuleStoreDraftAndPubli
             blacklist=blacklist
         )
 
-        # Now it's been published, add the object to the courseware search index so that it appears in search results
         if self.signal_handler:
-            self.signal_handler.send("course_published", course_key=location.course_key)
+            self.signal_handler.send("item_published", course_key=location.course_key, item_location=location)
 
         return self.get_item(location.for_branch(ModuleStoreEnum.BranchName.published), **kwargs)
 
@@ -370,6 +369,9 @@ class DraftVersioningModuleStore(SplitMongoModuleStore, ModuleStoreDraftAndPubli
         with self.bulk_operations(location.course_key):
             self.delete_item(location, user_id, revision=ModuleStoreEnum.RevisionOption.published_only)
             return self.get_item(location.for_branch(ModuleStoreEnum.BranchName.draft), **kwargs)
+
+        if self.signal_handler:
+            self.signal_handler.send("course_published", course_key=location.course_key)
 
     def revert_to_published(self, location, user_id):
         """

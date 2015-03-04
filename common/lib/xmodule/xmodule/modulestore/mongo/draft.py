@@ -439,6 +439,17 @@ class DraftModuleStore(MongoModuleStore):
         # convert the subtree using the original item as the root
         self._breadth_first(convert_item, [location])
 
+    def _flag_publish_event(self, course_key, location=None):
+        if self.signal_handler:
+            bulk_record = self._get_bulk_ops_record(course_key)
+            if bulk_record.active:
+                publish_location = location if location else course_key
+                bulk_record.add_publish_item(publish_location)
+            elif location:
+                self.signal_handler.send("item_published", course_key=course_key, item_location=location)
+            else:
+                self.signal_handler.send("course_published", course_key=course_key)
+
     def update_item(self, xblock, user_id, allow_not_found=False, force=False, isPublish=False, **kwargs):
         """
         See superclass doc.
@@ -451,9 +462,8 @@ class DraftModuleStore(MongoModuleStore):
         if draft_loc.revision == MongoRevisionKey.published:
             item = super(DraftModuleStore, self).update_item(xblock, user_id, allow_not_found)
             course_key = xblock.location.course_key
-            bulk_record = self._get_bulk_ops_record(course_key)
-            if self.signal_handler and not bulk_record.active:
-                self.signal_handler.send("course_published", course_key=course_key)
+            if isPublish:
+                self._flag_publish_event(course_key, item.location)
             return item
 
         if not super(DraftModuleStore, self).has_item(draft_loc):
@@ -728,9 +738,7 @@ class DraftModuleStore(MongoModuleStore):
             bulk_record.dirty = True
             self.collection.remove({'_id': {'$in': to_be_deleted}})
 
-        # Now it's been published, add the object to the courseware search index so that it appears in search results
-        if self.signal_handler:
-            self.signal_handler.send("course_published", course_key=location.course_key)
+        self._flag_publish_event(course_key, location)
 
         return self.get_item(as_published(location))
 
@@ -745,9 +753,7 @@ class DraftModuleStore(MongoModuleStore):
         self._convert_to_draft(location, user_id, delete_published=True)
 
         course_key = location.course_key
-        bulk_record = self._get_bulk_ops_record(course_key)
-        if self.signal_handler and not bulk_record.active:
-            self.signal_handler.send("course_published", course_key=course_key)
+        self._flag_publish_event(course_key)
 
     def revert_to_published(self, location, user_id=None):
         """

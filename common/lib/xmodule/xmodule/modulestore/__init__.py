@@ -116,6 +116,7 @@ class BulkOpsRecord(object):
     """
     def __init__(self):
         self._active_count = 0
+        self._publish_items = []
 
     @property
     def active(self):
@@ -135,6 +136,13 @@ class BulkOpsRecord(object):
         Record the completion of a level of nesting of the bulk write operation
         """
         self._active_count -= 1
+
+    def add_publish_item(self, location):
+        self._publish_items.append(location)
+
+    @property
+    def publish_items(self):
+        return self._publish_items
 
     @property
     def is_root(self):
