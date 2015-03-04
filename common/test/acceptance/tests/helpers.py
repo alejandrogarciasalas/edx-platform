@@ -214,6 +214,7 @@ def select_option_by_value(browser_query, value):
     """
     select = Select(browser_query.first.results[0])
     select.select_by_value(value)
+    select.first_selected_option.click()
 
 
 def is_option_value_selected(browser_query, value):
