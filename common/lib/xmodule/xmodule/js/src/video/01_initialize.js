@@ -53,7 +53,9 @@ function (VideoPlayer, VideoStorage, i18n) {
                         }
 
                         _hideWaitPlaceholder(state);
-                        state.el.trigger('initialize', arguments);
+                        var vent = document.createEvent('Event');
+                        vent.initEvent('initialize', true, true);
+                        state.el[0].dispatchEvent(vent);
                     });
             });
     },

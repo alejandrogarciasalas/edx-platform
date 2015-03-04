@@ -273,7 +273,9 @@ function () {
                         );
                     }
 
-                    el.trigger('html5:' + eventName, arguments);
+                    var vent = document.createEvent('Event');
+                    vent.initEvent('html5:' + eventName, true, true);
+                    el[0].dispatchEvent(vent);
                 });
             });
 
