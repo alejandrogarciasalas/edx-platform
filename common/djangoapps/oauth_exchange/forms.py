@@ -51,7 +51,7 @@ class AccessTokenExchangeForm(ScopeMixin, OAuthForm):
             return {}
 
         provider_name = self.cleaned_data["provider"]
-        provider_class = Registry.get(provider_name)
+        provider_class = Registry.get_by_backend_name(provider_name)
         if not (
                 provider_class and
                 issubclass(provider_class.BACKEND_CLASS, social_oauth.BaseOAuth2)
