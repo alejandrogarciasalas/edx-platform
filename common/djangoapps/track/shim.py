@@ -121,6 +121,19 @@ class VideoEventProcessor(object):
 
             del payload['module_id']
 
+        if 'context' not in event:
+            return
+
+        context = event['context']
+
+        #For the iOS build that is returning a +30 for back skip 30
+        if context['application']['version'] == "1.0.02" and \
+                        context['application']['name'] == "edx.mobileapp.iOS":
+            if 'requested_skip_interval' in payload and 'seek_type' in payload:
+                if payload['requested_skip_interval'] == 30 and \
+                        payload['seek_type'] == "skip":
+                    payload['requested_skip_interval'] = -30
+
         #For the Android build that isn't distinguishing between skip and seek
         if 'requested_skip_interval' in payload:
             if payload['requested_skip_interval'] != -30:
@@ -140,10 +153,7 @@ class VideoEventProcessor(object):
 
         event['event'] = json.dumps(payload)
 
-        if 'context' not in event:
-            return
 
-        context = event['context']
 
         if 'open_in_browser_url' in context:
             page, _sep, _tail = context.pop('open_in_browser_url').rpartition('/')

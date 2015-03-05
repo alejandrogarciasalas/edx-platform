@@ -117,7 +117,7 @@ class SegmentIOTrackingTestCase(EventTrackingTestCase):
         action = kwargs.get('action', 'Track')
         sample_event = {
             "userId": kwargs.get('user_id', USER_ID),
-            "event": "Did something",
+            "event": kwargs.get('event', "Did Something"),
             "properties": {
                 'name': kwargs.get('name', str(sentinel.name)),
                 'data': kwargs.get('data', {}),
@@ -406,3 +406,117 @@ class SegmentIOTrackingTestCase(EventTrackingTestCase):
 
         self.assertEqualUnicode(actual_event, expected_event_without_payload)
         self.assertEqualUnicode(payload, expected_payload)
+
+    @data(
+        (1, "onSlideSeek"),
+        (-2, "onSlideSeek"),
+        (30, "onSlideSeek"),
+        (-30, "onSkipSeek")
+    )
+    @unpack
+    def test_old_android_build(self, requested_skip_interval, seek_type):
+        """
+        Test backwards compatibility of Android version 1.0.04
+
+        Skip and slide were both being returned as a skip. Skip or slide is
+        determined by checking if the skip time is == -30
+        """
+        course_id = 'foo/bar/baz'
+        middleware = TrackMiddleware()
+        input_payload = {
+            "code": "mobile",
+            "new_time": 89.699177437,
+            "old_time": 119.699177437,
+            "seek_type": "skip",
+            "requested_skip_interval": requested_skip_interval,
+            'module_id': 'i4x://foo/bar/baz/some_module',
+        }
+        request = self.create_request(
+            data=self.create_segmentio_event_json(
+                name="edx.video.position.changed",
+                data=input_payload,
+                context={
+                    'open_in_browser_url': 'https://testserver/courses/foo/bar/baz/courseware/Week_1/Activity/2',
+                    'course_id': course_id,
+                    'application': {
+                        'name': 'edx.mobileapp.android',
+                        'version': '29',
+                        'component': 'videoplayer'
+                    }
+                },
+            ),
+            content_type='application/json'
+        )
+        User.objects.create(pk=USER_ID, username=str(sentinel.username))
+
+        middleware.process_request(request)
+        try:
+            response = segmentio.segmentio_event(request)
+            self.assertEquals(response.status_code, 200)
+
+            expected_event_without_payload = {
+                'accept_language': '',
+                'referer': '',
+                'username': str(sentinel.username),
+                'ip': '',
+                'session': '',
+                'event_source': 'mobile',
+                'event_type': "seek_video",
+                'name': "edx.video.position.changed",
+                'agent': str(sentinel.user_agent),
+                'page': 'https://testserver/courses/foo/bar/baz/courseware/Week_1/Activity',
+                'time': datetime.strptime("2014-08-27T16:33:39.215Z", "%Y-%m-%dT%H:%M:%S.%fZ"),
+                'host': 'testserver',
+                'context': {
+                    'user_id': USER_ID,
+                    'course_id': course_id,
+                    'org_id': 'foo',
+                    'path': ENDPOINT,
+                    'client': {
+                        'library': {
+                            'name': 'test-app',
+                            'version': 'unknown'
+                        },
+                        'app': {
+                            'version': '1.0.1',
+                        },
+                    },
+                    'application': {
+                        'name': 'edx.mobileapp.android',
+                        'version': '29',
+                        'component': 'videoplayer'
+                    },
+                    'received_at': datetime.strptime("2014-08-27T16:33:39.100Z", "%Y-%m-%dT%H:%M:%S.%fZ"),
+                },
+            }
+            expected_payload = {
+                "code": "mobile",
+                "new_time": 89.699177437,
+                "old_time": 119.699177437,
+                "type": seek_type,
+                "requested_skip_interval": requested_skip_interval,
+                'id': 'i4x-foo-bar-baz-some_module',
+            }
+        finally:
+            middleware.process_response(request, None)
+
+        actual_event = dict(self.get_event())
+        payload = json.loads(actual_event.pop('event'))
+
+        self.assertEqualUnicode(actual_event, expected_event_without_payload)
+        self.assertEqualUnicode(payload, expected_payload)
+
+    def test_old_ios_build(self):
+        """
+        iOS app v1.0.2 emits positive skipback. Should be negative
+        """
+        pass
+        self.assertEqual(1,2)
+        sample_event_raw = self.create_segmentio_event()
+        sample_event_raw['properties']['data']
+        request = self.create_request(
+            data=json.dumps(sample_event_raw),
+            content_type='application/json'
+        )
+        User.objects.create(pk=USER_ID, username=str(sentinel.username))
+        segmentio.track_segmentio_event(request)
