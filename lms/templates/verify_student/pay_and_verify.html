@@ -71,7 +71,7 @@ from verify_student.views import PayAndVerifyView
       data-verification-deadline='${verification_deadline}'
       data-display-steps='${json.dumps(display_steps)}'
       data-current-step='${current_step}'
-      data-requirements='${requirements}'
+      data-requirements='${json.dumps(requirements)}'
       data-msg-key='${message_key}'
       data-is-active='${is_active}'
     ></div>
