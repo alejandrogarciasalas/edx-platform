@@ -140,6 +140,7 @@ class VideoEventProcessor(object):
                 if 'seek_type' in payload:
                     payload['seek_type'] = 'slide'
 
+        #For converting seek_type to seek and skip|slide to onSlideSeek|onSkipSeek
         if 'seek_type' in payload:
             seek_type = payload['seek_type']
             if seek_type == 'slide':
