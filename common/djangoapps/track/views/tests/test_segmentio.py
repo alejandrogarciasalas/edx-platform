@@ -117,7 +117,7 @@ class SegmentIOTrackingTestCase(EventTrackingTestCase):
         action = kwargs.get('action', 'Track')
         sample_event = {
             "userId": kwargs.get('user_id', USER_ID),
-            "event": kwargs.get('event', "Did Something"),
+            "event": "Did Something",
             "properties": {
                 'name': kwargs.get('name', str(sentinel.name)),
                 'data': kwargs.get('data', {}),
